@@ -1,7 +1,7 @@
-# name: YOUR NAME HERE
-# date:
+# name: Munkh-Orgil Tumurchudur
+# date: March 4, 2026
 # description: Implementation of CRUD operations with DynamoDB — CS178 Lab 10
-# proposed score: 0 (out of 5) -- if I don't change this, I agree to get 0 points.
+# proposed score: 5 (out of 5) -- if I don't change this, I agree to get 0 points.
 
 import boto3
 
@@ -10,25 +10,64 @@ dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
 table = dynamodb.Table('Movies')
 
 def create_movie():
-    """
-    Prompt user for a Movie Title.
-    Add the movie to the database with the title and an empty Ratings list.
-    """
-    print("creating a movie")
+    title = input("Enter movie's title: ")
+    year = int(input("Enter year of the movie: "))
+    rating = int(input("Enter the rating: "))
+    genre = input("Enter movie's genre: ")
+
+    table.put_item(Item={
+        'Title': title,
+        'Year': year,
+        'Ratings': [rating],
+        'Genre': genre})
+
+def print_movie(movie):
+    title = movie.get("Title", "Unknown Title")
+    year = movie.get("Year", "Unknown Year")
+    ratings = movie.get("Ratings", "No ratings")
+    genre = movie.get("Genre", "Unknown Genre")
+
+    print(f"  Title  : {title}")
+    print(f"  Year   : {year}")
+    print(f"  Ratings: {ratings}")
+    print(f"  Genre  : {genre}")
+    print()
+
+
 
 def print_all_movies():
-    """
-    Display all movies in the database.
-    """
-    print("display all movies")
+    """Scan the entire Movies table and print each item."""
+
+    # scan() retrieves ALL items in the table.
+    # For large tables you'd use query() instead — but for our small
+    # dataset, scan() is fine.
+    response = table.scan()
+    items = response.get("Items", [])
+    
+    if not items:
+        print("No movies found. Make sure your DynamoDB table has data.")
+        return
+    
+    print(f"Found {len(items)} movie(s):\n")
+    for movie in items:
+        print_movie(movie)
 
 def update_rating():
-    """
-    Prompt user for a Movie Title.
-    Prompt user for a rating (integer).
-    Append the rating to the movie's Ratings list in the database.
-    """
-    print("updating rating")
+
+    try:
+        title = input("What is the movie title? ")
+        rating = int(input("What is the rating (integer): "))
+        table.update_item(
+            Key={"Title": title},
+            UpdateExpression="SET Ratings = list_append(Ratings, :r)",
+            ExpressionAttributeValues={':r': [rating]}
+        )
+        print("updating rating")
+        
+    except Exception as e:
+        print("Error in updating movie rating")
+
+
 
 def delete_movie():
     """
@@ -75,3 +114,4 @@ def main():
             print("Not a valid option. Try again.")
 
 main()
+
